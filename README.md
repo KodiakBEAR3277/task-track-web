@@ -1,2 +1,2 @@
 # task-tracker-web
- Comissioned Project
+ A Comissioned (but also in personal interest) Project for Learning Management System-like service website
