@@ -83,6 +83,37 @@ export const Button = styled('button')({
   }
 });
 
+export const StyledButton = styled('button')({
+  width: '100%',
+  padding: '12px',
+  backgroundColor: colors.primary,
+  color: colors.textDark,
+  border: 'none',
+  borderRadius: '8px',
+  fontSize: '16px',
+  fontWeight: '600',
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    backgroundColor: colors.hover,
+  },
+  '&:disabled': {
+    backgroundColor: colors.primary,
+    opacity: 0.7,
+    cursor: 'not-allowed',
+  },
+  '&:focus': {
+    backgroundColor: colors.primary,
+    outline: 'none',
+  },
+  '&:active': {
+    backgroundColor: colors.hover,
+  },
+  '&.error': {
+    backgroundColor: colors.primary,
+  }
+});
+
 export const Title = styled('h1')({
   fontFamily: 'Inter, sans-serif',
   fontSize: '2.5rem',

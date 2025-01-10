@@ -4,7 +4,10 @@ from flask_cors import CORS
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 mysql = MySQL()
@@ -20,25 +23,19 @@ def create_app():
         MYSQL_DB='task-tracker-db',  # Updated database name
         JWT_SECRET_KEY='dev-key'
     )
-    logger.debug(f"MySQL Config: {app.config['MYSQL_HOST']}, {app.config['MYSQL_DB']}")
+    logger.debug(f"App config: {app.config}")
     
     CORS(app)
+    mysql.init_app(app)
     
-    try:
-        mysql.init_app(app)
-        # Test connection
-        with app.app_context():
-            cur = mysql.connection.cursor()
-            cur.execute('SELECT 1')
-            cur.close()
-        logger.debug("MySQL connection successful")
-    except Exception as e:
-        logger.error(f"MySQL connection failed: {str(e)}")
-        raise
-
-    from app.routes import api
+    from .routes import api
     app.register_blueprint(api, url_prefix='/api')
     
-    logger.debug("Routes registered:", app.url_map)
+    logger.debug("API routes registered")
+    # Debug route registration
+    routes = [str(rule) for rule in app.url_map.iter_rules()]
+    logger.debug(f"Available routes:")
+    for route in routes:
+        logger.debug(f"  {route}")
 
     return app

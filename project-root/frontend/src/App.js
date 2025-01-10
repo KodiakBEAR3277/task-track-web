@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './screens/Home';
 import Projects from './screens/Projects';
 import Admin from './screens/Admin';
@@ -8,18 +8,14 @@ import Login from './components/Auth/Login';
 import SignUp from './components/Auth/SignUp';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
+import { isAuthenticated, getUserRole } from './utils/auth';
 
 const theme = createTheme();
 
 function App() {
-    // Check if user is authenticated
-    const isAuthenticated = () => {
-        return localStorage.getItem('token') !== null;
-    };
-
-    // Protected Route component
     const ProtectedRoute = ({ children }) => {
-        if (!isAuthenticated()) {
+        const isAuth = isAuthenticated();
+        if (!isAuth) {
             return <Navigate to="/login" replace />;
         }
         return children;
@@ -29,13 +25,14 @@ function App() {
         <ThemeProvider theme={theme}>
             <Router>
                 <Routes>
-                    {/* Public routes */}
-                    <Route path="/login" element={
-                        isAuthenticated() ? <Navigate to="/projects" replace /> : <Login />
-                    } />
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<SignUp />} />
-
-                    {/* Protected routes */}
+                    <Route path="/home" element={
+                        <ProtectedRoute>
+                            <Home />
+                        </ProtectedRoute>
+                    } />
                     <Route path="/projects" element={
                         <ProtectedRoute>
                             <Projects />
@@ -50,16 +47,6 @@ function App() {
                         <ProtectedRoute>
                             <Student />
                         </ProtectedRoute>
-                    } />
-                    <Route path="/home" element={
-                        <ProtectedRoute>
-                            <Home />
-                        </ProtectedRoute>
-                    } />
-
-                    {/* Root route redirects based on authentication */}
-                    <Route path="/" element={
-                        isAuthenticated() ? <Navigate to="/projects" replace /> : <Navigate to="/login" replace />
                     } />
                 </Routes>
             </Router>
