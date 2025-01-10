@@ -1,23 +1,17 @@
 from . import mysql
 
-def get_user_by_email(email):
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM users WHERE email = %s", (email,))
-    user = cur.fetchone()
-    cur.close()
-    return user
-
-def create_user(username, email, password_hash):
+def create_user(username, email, password, role='student'):
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
-            (username, email, password_hash)
+            "INSERT INTO users (username, email, password, role) VALUES (%s, %s, %s, %s)",
+            (username, email, password, role)
         )
         mysql.connection.commit()
         return True
     except Exception as e:
         print(f"Error creating user: {e}")
+        mysql.connection.rollback()
         return False
     finally:
         cur.close()

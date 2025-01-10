@@ -1,48 +1,32 @@
 import React, { useState } from 'react';
-import {
-    FormContainer,
-    PageContainer,
-    Input,
-    Button,
-    SignUpLink,
-    ErrorText,
-    Title
-} from './styles';
+import { useNavigate } from 'react-router-dom';
+import { Title, FormContainer, Input, ErrorText, SignUpLink, PageContainer, StyledButton } from './styles';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:5000/api/login', {
+            const response = await fetch('http://127.0.0.1:5000/api/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
             });
-            
+
             const data = await response.json();
-            
             if (response.ok) {
                 localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify({
-                    id: data.user_id,
-                    username: data.username
-                }));
-                
-                window.location.href = '/projects';
+                localStorage.setItem('user', JSON.stringify(data.user));
+                navigate('/home');
             } else {
-                setError(data.message || 'Login failed');
+                setError(data.error);
             }
         } catch (err) {
-            setError('Login failed. Please try again.');
+            setError('Failed to connect to server');
         }
     };
 
@@ -67,7 +51,9 @@ const Login = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
                 />
-                <Button type="submit">Login</Button>
+                <StyledButton type="submit" className={error ? 'error' : ''}>
+                    Login
+                </StyledButton>
                 <SignUpLink>
                     Don't have an account?{' '}
                     <button onClick={handleSignupClick}>Sign up</button>
