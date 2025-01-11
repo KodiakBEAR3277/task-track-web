@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<svg 
+  width="24" 
+  height="24" 
+  viewBox="0 0 24 24" 
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path 
+    d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+    stroke="#FFC600"
+    strokeWidth="4.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    fill="none"
+  />
+  <path 
+    d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"
+    stroke="#FFC600"
+    strokeWidth="4.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    fill="none"
+  />
+  <!-- Content lines -->
+  <line 
+    x1="8" y1="10" x2="16" y2="10"
+    stroke="#FFC600"
+    strokeWidth="4"
+    strokeLinecap="round"
+  />
+  <line 
+    x1="8" y1="14" x2="16" y2="14"
+    stroke="#FFC600"
+    strokeWidth="4"
+    strokeLinecap="round"
+  />
+  <line 
+    x1="8" y1="18" x2="16" y2="18"
+    stroke="#FFC600"
+    strokeWidth="4"
+    strokeLinecap="round"
+  />
+</svg>
