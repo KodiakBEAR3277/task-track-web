@@ -1,0 +1,32 @@
+<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main clipboard body - rounded rectangle -->
+  <rect 
+    x="100" 
+    y="50" 
+    width="600" 
+    height="700" 
+    rx="80" 
+    fill="#FFC600"
+  />
+  
+  <!-- Top clip/holder -->
+  <path 
+    d="M250 50 H550 Q580 50 580 80 V120 Q580 150 550 150 H250 Q220 150 220 120 V80 Q220 50 250 50 Z" 
+    fill="#FFC600"
+  />
+  
+  <!-- Clip mechanism -->
+  <rect 
+    x="300" 
+    y="20" 
+    width="200" 
+    height="60" 
+    rx="30" 
+    fill="#FFC600"
+  />
+  
+  <!-- Three horizontal lines -->
+  <rect x="200" y="250" width="400" height="60" rx="30" fill="#1f2937"/>
+  <rect x="200" y="370" width="400" height="60" rx="30" fill="#1f2937"/>
+  <rect x="200" y="490" width="400" height="60" rx="30" fill="#1f2937"/>
+</svg>

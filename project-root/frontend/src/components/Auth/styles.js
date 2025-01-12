@@ -24,7 +24,9 @@ export const FormContainer = styled('form')({
   '@media (max-width: 480px)': {
     padding: '20px',
     maxWidth: '95%'
-  }
+  },
+  position: 'relative',
+  paddingBottom: '20px' // Extra padding for error messages
 });
 
 export const PageContainer = styled('div')({
@@ -43,26 +45,27 @@ export const PageContainer = styled('div')({
   }
 });
 
-export const Input = styled('input')({
+export const InputWrapper = styled('div')(({ hasError }) => ({
+  display: 'flex',
+  flexDirection: 'column',
   width: '100%',
-  padding: '0.875rem 1rem',
-  marginBottom: '1rem',
-  border: '2px solid rgba(0, 0, 0, 0.1)',
+  marginBottom: '8px',
+  height: hasError ? 'auto' : '40px',
+  transition: 'height 0.2s ease'
+}));
+
+export const Input = styled('input')(({ hasError }) => ({
+  width: '100%',
+  padding: '12px',
+  marginBottom: 0,
+  border: hasError ? `1px solid ${colors.error}` : `1px solid #ddd`,
   borderRadius: '8px',
-  fontSize: '1rem',
-  fontFamily: 'Inter, sans-serif',
-  color: colors.textDark,  // Add this line
-  backgroundColor: '#ffffff',  // Add this line
-  transition: 'all 0.2s ease',
+  fontSize: '16px',
   '&:focus': {
     outline: 'none',
-    borderColor: colors.primary,
-    boxShadow: `0 0 0 3px rgba(255, 221, 0, 0.2)`
-  },
-  '&::placeholder': {
-    color: 'rgba(0, 0, 0, 0.5)'  // Add this line
+    borderColor: hasError ? colors.error : colors.primary
   }
-});
+}));
 
 export const Button = styled('button')({
   width: '100%',
@@ -90,27 +93,9 @@ export const StyledButton = styled('button')({
   color: colors.textDark,
   border: 'none',
   borderRadius: '8px',
-  fontSize: '16px',
-  fontWeight: '600',
   cursor: 'pointer',
-  transition: 'all 0.3s ease',
   '&:hover': {
-    backgroundColor: colors.hover,
-  },
-  '&:disabled': {
-    backgroundColor: colors.primary,
-    opacity: 0.7,
-    cursor: 'not-allowed',
-  },
-  '&:focus': {
-    backgroundColor: colors.primary,
-    outline: 'none',
-  },
-  '&:active': {
-    backgroundColor: colors.hover,
-  },
-  '&.error': {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.hover
   }
 });
 
@@ -127,10 +112,17 @@ export const Title = styled('h1')({
   }
 });
 
-export const ErrorMessage = styled('div')({
-    color: '#ff0000',
-    marginBottom: '1rem',
-    fontSize: '14px'
+export const ErrorMessage = styled('span')({
+  color: colors.error,
+  fontSize: '12px',
+  height: '0',
+  opacity: 0,
+  overflow: 'hidden',
+  transition: 'height 0.2s ease, opacity 0.2s ease',
+  '&.visible': {
+    height: '16px',
+    opacity: 1
+  }
 });
 
 export const SignUpLink = styled('div')({
