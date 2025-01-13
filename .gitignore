@@ -1,13 +1,7 @@
 node_modules/
 .next/
 dist/
+*.log|
 build/
-*.log
-uploads/
-.env*node_modules/
-.next/
-dist/
-build/
-*.log
 uploads/
 .env*
