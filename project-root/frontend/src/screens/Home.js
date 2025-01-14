@@ -24,17 +24,20 @@ export default function HomePage() {
         {
             title: "Manage Projects",
             description: "Create, edit, and track your projects.",
-            image: projectImage
+            image: projectImage,
+            path: '/projects' // Add this line
         },
         {
             title: "Track Tasks",
             description: "Organize tasks within projects and set priorities.",
-            image: taskImage
+            image: taskImage,
+            path: '/tasks' // Add this line
         },
         {
             title: "Set Notifications",
             description: "Receive notifications for due dates and completion times.",
-            image: notificationImage
+            image: notificationImage,
+            path: '/notifications' // Add this line
         }
     ];
 
@@ -124,16 +127,21 @@ export default function HomePage() {
                 <div className="max-w-6xl mx-auto">
                     <h2 className="text-3xl font-bold text-center mb-12">Features</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {features.map((feature, index) => (
-                            <div key={index} className="bg-gray-700 rounded-lg overflow-hidden hover:shadow-xl transition-shadow">
-                                <img 
-                                    src={feature.image} 
-                                    alt={feature.title} 
-                                    className="w-full h-48 object-cover"
-                                />
-                                <div className="p-6">
-                                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                                    <p className="text-gray-300">{feature.description}</p>
+                    {features.map((feature, index) => (
+                        <div 
+                            key={index} 
+                            className="bg-gray-700 rounded-lg overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
+                            onClick={() => feature.path && handleNavigation(feature.path)}
+                            style={{ cursor: feature.path ? 'pointer' : 'default' }}
+                        >
+                            <img 
+                                src={feature.image} 
+                                alt={feature.title} 
+                                className="w-full h-48 object-cover"
+                            />
+                            <div className="p-6">
+                                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                                <p className="text-gray-300">{feature.description}</p>
                                 </div>
                             </div>
                         ))}
