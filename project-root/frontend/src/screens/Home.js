@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home as HomeIcon, Calendar, Bell, Save, Clipboard, X } from 'lucide-react';
+import { Home as HomeIcon, Calendar, Bell, X } from 'lucide-react';
 import heroImage from '../assets/images/hero.jpg';
 import projectImage from '../assets/images/project.jpg';
 import taskImage from '../assets/images/task.jpg';
@@ -9,8 +9,44 @@ import clipboardIcon from '../assets/icons/clipboard.svg';
 
 export default function HomePage() {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
+    const [upcomingDeadlines, setUpcomingDeadlines] = useState([]);
     const navigate = useNavigate();
     
+    const fetchUpcomingDeadlines = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const response = await fetch('http://localhost:5000/api/projects', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const upcoming = data.data.filter(project => {
+                    if (!project.deadline) return false;
+                    const deadline = new Date(project.deadline);
+                    const today = new Date();
+                    const diffTime = deadline - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays <= 7 && diffDays > 0;
+                });
+                setUpcomingDeadlines(upcoming);
+            }
+        } catch (err) {
+            console.error('Failed to fetch upcoming deadlines:', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchUpcomingDeadlines();
+        const interval = setInterval(fetchUpcomingDeadlines, 300000);
+        return () => clearInterval(interval);
+    }, []);
+
     const handleNavigation = (path) => {
         navigate(path);
         setSidebarOpen(false);
@@ -91,10 +127,16 @@ export default function HomePage() {
                         </button>
                         <button 
                             onClick={() => handleNavigation('/notifications')}
-                            className="flex items-center gap-3 text-gray-300 hover:text-yellow-400 py-2"
+                            className="flex items-center gap-3 text-gray-300 hover:text-yellow-400 py-2 relative"
                         >
                             <Bell />
                             <span>Notifications</span>
+                            {/* Add notification badge if there are upcoming deadlines */}
+                            {upcomingDeadlines?.length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                    {upcomingDeadlines.length}
+                                </span>
+                            )}
                         </button>
                     </div>
                 </div>

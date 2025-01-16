@@ -568,11 +568,12 @@ def search_tasks():
 @api.route('/projects', methods=['GET', 'POST'])
 @token_required
 def handle_projects():
-    if request.method == 'GET':
-        cur = mysql.connection.cursor()
-        try:
+    cur = mysql.connection.cursor()
+    try:
+        if request.method == 'GET':
             cur.execute("""
-                SELECT id, title, description, is_completed, created_at, updated_at 
+                SELECT id, title, description, is_completed, deadline, notifications,
+                       created_at, updated_at 
                 FROM projects 
                 WHERE user_id = %s 
                 ORDER BY created_at DESC""", (request.user['id'],))
@@ -583,8 +584,10 @@ def handle_projects():
                 'title': project[1],
                 'description': project[2],
                 'is_completed': bool(project[3]),
-                'created_at': project[4].isoformat(),
-                'updated_at': project[5].isoformat()
+                'deadline': project[4].isoformat() if project[4] else None,
+                'notifications': bool(project[5]),
+                'created_at': project[6].isoformat(),
+                'updated_at': project[7].isoformat()
             } for project in projects]
             
             return jsonify({
@@ -592,63 +595,118 @@ def handle_projects():
                 'data': formatted_projects
             })
             
-        finally:
-            cur.close()
-            
-    elif request.method == 'POST':
-        data = request.get_json()
-        cur = mysql.connection.cursor()
-        try:
-            cur.execute("""
-                INSERT INTO projects (title, description, user_id) 
-                VALUES (%s, %s, %s)""",
-                (data['title'], data['description'], request.user['id']))
-            mysql.connection.commit()
-            return jsonify({'message': 'Project created successfully'}), 201
-        finally:
-            cur.close()
+        else:  # POST method
+            data = request.get_json()
+            # Convert empty deadline string to None
+            deadline = data.get('deadline')
+            if deadline == '':
+                deadline = None
 
-@api.route('/projects/<int:project_id>', methods=['DELETE', 'PUT', 'OPTIONS'])
-@token_required
-def handle_project(project_id):
-    # Handle OPTIONS request for preflight
-    if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers['Access-Control-Allow-Methods'] = 'DELETE, PUT'
-        return response, 200
-        
-    if request.method == 'DELETE':
-        cur = mysql.connection.cursor()
-        try:
-            cur.execute("DELETE FROM projects WHERE id = %s AND user_id = %s", 
-                       (project_id, request.user['id']))
-            mysql.connection.commit()
-            
-            if cur.rowcount > 0:
-                return jsonify({
-                    'status': 'success',
-                    'message': 'Project deleted successfully',
-                    'project_id': project_id
-                }), 200
-            return jsonify({'error': 'Project not found'}), 404
-            
-        except Exception as e:
-            mysql.connection.rollback()
-            logging.error(f"[PROJECT-DELETE] Error: {str(e)}")
-            return jsonify({'error': str(e)}), 500
-        finally:
-            cur.close()
-            
-    elif request.method == 'PUT':
-        data = request.get_json()
-        cur = mysql.connection.cursor()
-        try:
             cur.execute("""
-                UPDATE projects 
-                SET is_completed = %s, updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s AND user_id = %s""", 
-                (data['is_completed'], project_id, request.user['id']))
+                INSERT INTO projects (title, description, user_id, deadline, notifications) 
+                VALUES (%s, %s, %s, %s, %s)""",
+                (data['title'], data['description'], request.user['id'],
+                 deadline, data.get('notifications', False)))
             mysql.connection.commit()
-            return jsonify({'message': 'Project updated successfully'})
-        finally:
-            cur.close()
+            
+            # Return the newly created project
+            project_id = cur.lastrowid
+            cur.execute("""
+                SELECT id, title, description, is_completed, deadline, notifications,
+                       created_at, updated_at 
+                FROM projects 
+                WHERE id = %s""", (project_id,))
+            project = cur.fetchone()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Project created successfully',
+                'data': {
+                    'id': project[0],
+                    'title': project[1],
+                    'description': project[2],
+                    'is_completed': bool(project[3]),
+                    'deadline': project[4].isoformat() if project[4] else None,
+                    'notifications': bool(project[5]),
+                    'created_at': project[6].isoformat(),
+                    'updated_at': project[7].isoformat()
+                }
+            }), 201
+
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+
+@api.route('/projects/<int:project_id>', methods=['PUT'])
+@token_required
+def update_project(project_id):
+    cur = mysql.connection.cursor()
+    try:
+        data = request.get_json()
+        update_fields = []
+        params = []
+        
+        if 'title' in data:
+            update_fields.append("title = %s")
+            params.append(data['title'])
+        if 'description' in data:
+            update_fields.append("description = %s")
+            params.append(data['description'])
+        if 'is_completed' in data:
+            update_fields.append("is_completed = %s")
+            params.append(data['is_completed'])
+        if 'deadline' in data:
+            update_fields.append("deadline = %s")
+            params.append(data['deadline'] if data['deadline'] else None)
+        if 'notifications' in data:
+            update_fields.append("notifications = %s")
+            params.append(data['notifications'])
+            
+        if not update_fields:
+            return jsonify({'error': 'No fields to update'}), 400
+
+        update_fields.append("updated_at = CURRENT_TIMESTAMP")
+        
+        # Add project_id and user_id to params
+        params.extend([project_id, request.user['id']])
+        
+        query = f"""
+            UPDATE projects 
+            SET {', '.join(update_fields)}
+            WHERE id = %s AND user_id = %s"""
+            
+        cur.execute(query, tuple(params))
+        mysql.connection.commit()
+        
+        if cur.rowcount > 0:
+            # Fetch and return the updated project
+            cur.execute("""
+                SELECT id, title, description, is_completed, deadline, notifications,
+                       created_at, updated_at 
+                FROM projects 
+                WHERE id = %s""", (project_id,))
+            project = cur.fetchone()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Project updated successfully',
+                'data': {
+                    'id': project[0],
+                    'title': project[1],
+                    'description': project[2],
+                    'is_completed': bool(project[3]),
+                    'deadline': project[4].isoformat() if project[4] else None,
+                    'notifications': bool(project[5]),
+                    'created_at': project[6].isoformat(),
+                    'updated_at': project[7].isoformat()
+                }
+            })
+        return jsonify({'error': 'Project not found or no changes made'}), 404
+        
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()

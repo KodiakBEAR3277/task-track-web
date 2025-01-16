@@ -8,7 +8,8 @@ import Login from './components/Auth/Login';
 import SignUp from './components/Auth/SignUp';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import { isAuthenticated, getUserRole } from './utils/auth';
+import { isAuthenticated } from './utils/auth';
+import Notifications from './screens/Notifications';
 
 const theme = createTheme();
 
@@ -46,6 +47,11 @@ function App() {
                     <Route path="/student" element={
                         <ProtectedRoute>
                             <Student />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/notifications" element={
+                        <ProtectedRoute>
+                            <Notifications />
                         </ProtectedRoute>
                     } />
                 </Routes>
