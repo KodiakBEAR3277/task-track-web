@@ -1,26 +1,121 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Bell, LayoutGrid, Save } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 
 const Projects = () => {
+  const [projects, setProjects] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newProject, setNewProject] = useState({ title: '', description: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch projects
+  const fetchProjects = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('No authentication token found');
+        return;
+      }
   
-  // Static project data for development
-  const projects = [
-    {
-      id: 1,
-      title: "Website Redesign",
-      description: "Complete overhaul of company website with modern UI/UX",
-      is_completed: false
-    },
-    {
-      id: 2,
-      title: "Mobile App Development",
-      description: "Build native mobile app for iOS and Android platforms",
-      is_completed: true
+      const response = await fetch('http://localhost:5000/api/projects', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        setProjects(data.data);
+      } else {
+        setError(data.error || 'Failed to fetch projects');
+      }
+    } catch (err) {
+      setError('Failed to fetch projects');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Add new project
+  const handleAddProject = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newProject)
+      });
+
+      if (response.ok) {
+        setShowAddModal(false);
+        setNewProject({ title: '', description: '' });
+        fetchProjects(); // Refresh projects list
+      } else {
+        const data = await response.json();
+        setError(data.error);
+      }
+    } catch (err) {
+      setError('Failed to add project');
+    }
+  };
+
+  // Add delete handler
+  const handleDeleteProject = async (projectId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setProjects(projects.filter(project => project.id !== projectId));
+      }
+    } catch (err) {
+      setError('Failed to delete project');
+    }
+  };
+
+  // Add completion toggle handler
+  const handleToggleComplete = async (projectId, isCompleted) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ is_completed: !isCompleted })
+      });
+
+      if (response.ok) {
+        setProjects(projects.map(project => 
+          project.id === projectId 
+            ? {...project, is_completed: !isCompleted}
+            : project
+        ));
+      }
+    } catch (err) {
+      setError('Failed to update project');
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -40,19 +135,22 @@ const Projects = () => {
         {projects.map((project) => (
           <Card key={project.id} className="bg-gray-800 border-gray-700">
             <CardContent className="p-6">
-              <div className="relative h-48 mb-4 overflow-hidden rounded-lg">
-                <img 
-                  src="https://via.placeholder.com/400x200"
-                  alt={project.title}
-                  className="w-full h-full object-cover"
-                />
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-semibold">{project.title}</h3>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleDeleteProject(project.id)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete
+                </Button>
               </div>
-              <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
               <p className="text-gray-400 mb-4">{project.description}</p>
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   checked={project.is_completed}
+                  onChange={() => handleToggleComplete(project.id, project.is_completed)}
                   className="mr-2"
                 />
                 <span>Completed</span>
@@ -62,8 +160,7 @@ const Projects = () => {
         ))}
       </div>
 
-      {/* Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4">
+      {/* Navigation Bar */}      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4">
         <div className="max-w-screen-xl mx-auto flex justify-around items-center">
           <Button variant="ghost" className="flex flex-col items-center">
             <LayoutGrid className="h-6 w-6" />
@@ -94,16 +191,23 @@ const Projects = () => {
                 type="text"
                 placeholder="Project Title"
                 className="w-full p-2 mb-4 bg-gray-700 rounded"
+                value={newProject.title}
+                onChange={(e) => setNewProject({...newProject, title: e.target.value})}
               />
               <textarea
                 placeholder="Project Description"
                 className="w-full p-2 mb-4 bg-gray-700 rounded h-32"
+                value={newProject.description}
+                onChange={(e) => setNewProject({...newProject, description: e.target.value})}
               />
               <div className="flex justify-end gap-4">
                 <Button variant="outline" onClick={() => setShowAddModal(false)}>
                   Cancel
                 </Button>
-                <Button className="bg-yellow-400 text-black hover:bg-yellow-500">
+                <Button 
+                  className="bg-yellow-400 text-black hover:bg-yellow-500"
+                  onClick={handleAddProject}
+                >
                   Add Project
                 </Button>
               </div>

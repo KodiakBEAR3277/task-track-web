@@ -6,8 +6,18 @@ import logging
 # Fix import
 from . import mysql  # Use relative import
 from functools import wraps
+from flask_cors import CORS
 
 api = Blueprint('api', __name__)
+CORS(api, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Authorization", "Content-Type"],
+        "expose_headers": ["Authorization"],
+        "supports_credentials": True
+    }
+})
 logging.basicConfig(level=logging.DEBUG)
 
 def token_required(f):
@@ -34,6 +44,29 @@ def token_required(f):
             return jsonify({'error': 'Token is invalid'}), 401
     return decorated
 
+@api.route('/projects/<int:project_id>', methods=['DELETE'])
+@token_required
+def delete_project(project_id):
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("DELETE FROM projects WHERE id = %s AND user_id = %s", 
+                   (project_id, request.user['id']))
+        mysql.connection.commit()
+        
+        if cur.rowcount > 0:
+            return jsonify({
+                'status': 'success',
+                'message': 'Project deleted successfully',
+                'project_id': project_id
+            }), 200
+        return jsonify({'error': 'Project not found'}), 404
+        
+    except Exception as e:
+        mysql.connection.rollback()
+        logging.error(f"[PROJECT-DELETE] Error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
 @api.route('/test-db', methods=['GET'])
 def test_db():
     try:
@@ -531,3 +564,91 @@ def search_tasks():
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
+
+@api.route('/projects', methods=['GET', 'POST'])
+@token_required
+def handle_projects():
+    if request.method == 'GET':
+        cur = mysql.connection.cursor()
+        try:
+            cur.execute("""
+                SELECT id, title, description, is_completed, created_at, updated_at 
+                FROM projects 
+                WHERE user_id = %s 
+                ORDER BY created_at DESC""", (request.user['id'],))
+            projects = cur.fetchall()
+            
+            formatted_projects = [{
+                'id': project[0],
+                'title': project[1],
+                'description': project[2],
+                'is_completed': bool(project[3]),
+                'created_at': project[4].isoformat(),
+                'updated_at': project[5].isoformat()
+            } for project in projects]
+            
+            return jsonify({
+                'status': 'success',
+                'data': formatted_projects
+            })
+            
+        finally:
+            cur.close()
+            
+    elif request.method == 'POST':
+        data = request.get_json()
+        cur = mysql.connection.cursor()
+        try:
+            cur.execute("""
+                INSERT INTO projects (title, description, user_id) 
+                VALUES (%s, %s, %s)""",
+                (data['title'], data['description'], request.user['id']))
+            mysql.connection.commit()
+            return jsonify({'message': 'Project created successfully'}), 201
+        finally:
+            cur.close()
+
+@api.route('/projects/<int:project_id>', methods=['DELETE', 'PUT', 'OPTIONS'])
+@token_required
+def handle_project(project_id):
+    # Handle OPTIONS request for preflight
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers['Access-Control-Allow-Methods'] = 'DELETE, PUT'
+        return response, 200
+        
+    if request.method == 'DELETE':
+        cur = mysql.connection.cursor()
+        try:
+            cur.execute("DELETE FROM projects WHERE id = %s AND user_id = %s", 
+                       (project_id, request.user['id']))
+            mysql.connection.commit()
+            
+            if cur.rowcount > 0:
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Project deleted successfully',
+                    'project_id': project_id
+                }), 200
+            return jsonify({'error': 'Project not found'}), 404
+            
+        except Exception as e:
+            mysql.connection.rollback()
+            logging.error(f"[PROJECT-DELETE] Error: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+        finally:
+            cur.close()
+            
+    elif request.method == 'PUT':
+        data = request.get_json()
+        cur = mysql.connection.cursor()
+        try:
+            cur.execute("""
+                UPDATE projects 
+                SET is_completed = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s AND user_id = %s""", 
+                (data['is_completed'], project_id, request.user['id']))
+            mysql.connection.commit()
+            return jsonify({'message': 'Project updated successfully'})
+        finally:
+            cur.close()
